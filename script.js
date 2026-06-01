@@ -682,10 +682,7 @@ const clamp = (val, min, max) => Math.min(Math.max(val, min), max);
       btn.querySelector('span').textContent = 'Send message';
       success.classList.add('show');
       success.focus();
-      // Redirect to thank you page after 1.5 seconds
-      setTimeout(() => {
-        window.location.href = 'thank-you.html';
-      }, 1500);
+      setTimeout(() => success.classList.remove('show'), 6000);
     }, 1200);
   });
 })();
@@ -835,14 +832,10 @@ const clamp = (val, min, max) => Math.min(Math.max(val, min), max);
         form.classList.add('form-hidden');
         successMsg.classList.add('show');
 
-        // Reset form after showing success message
+        // Redirect to thank you page after 2 seconds
         setTimeout(() => {
-          form.reset();
-          form.classList.remove('form-hidden');
-          successMsg.classList.remove('show');
-          submitBtn.disabled = false;
-          submitBtn.innerHTML = originalText;
-        }, 3500);
+          window.location.href = 'thank-you.html';
+        }, 2000);
       } else {
         throw new Error(data.message || 'Failed to send message');
       }

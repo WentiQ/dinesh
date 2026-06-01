@@ -10,16 +10,47 @@
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
   <style>
-    body { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 2rem; }
-    .thank-you-container { text-align: center; max-width: 500px; }
-    .thank-you-icon { width: 80px; height: 80px; margin: 0 auto 2rem; color: var(--accent); }
-    .thank-you-title { font-family: var(--font-serif); font-size: 2.5rem; margin-bottom: 1rem; }
-    .thank-you-text { color: var(--text-2); font-size: 1rem; line-height: 1.6; margin-bottom: 2rem; }
-    .thank-you-btn { display: inline-block; padding: 1rem 2rem; background: var(--accent); color: var(--bg); border-radius: 0.5rem; text-decoration: none; font-weight: 500; transition: all 0.3s; }
+    body { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 2rem; cursor: none; }
+    
+    /* Custom Cursor */
+    #cursor {
+      position: fixed;
+      width: 8px;
+      height: 8px;
+      background: var(--accent);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 9999;
+      mix-blend-mode: screen;
+    }
+    #cursor-follower {
+      position: fixed;
+      width: 24px;
+      height: 24px;
+      border: 1.5px solid var(--accent);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 9998;
+      mix-blend-mode: screen;
+    }
+    
+    .thank-you-container { text-align: center; max-width: 500px; position: relative; z-index: 1; }
+    .thank-you-icon { width: 80px; height: 80px; margin: 0 auto 2rem; color: var(--accent); animation: scaleIn 0.4s ease-out 0.2s both; }
+    @keyframes scaleIn { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    .thank-you-title { font-family: var(--font-serif); font-size: 2.5rem; margin-bottom: 1rem; animation: fadeInUp 0.6s ease-out 0.3s both; }
+    @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    .thank-you-text { color: var(--text-2); font-size: 1rem; line-height: 1.6; margin-bottom: 2rem; animation: fadeInUp 0.6s ease-out 0.4s both; }
+    .thank-you-btn { display: inline-block; padding: 1rem 2rem; background: var(--accent); color: var(--bg); border-radius: 0.5rem; text-decoration: none; font-weight: 500; transition: all 0.3s; animation: fadeInUp 0.6s ease-out 0.5s both; }
     .thank-you-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(232, 213, 176, 0.2); }
+    .countdown { color: var(--text-2); font-size: 0.85rem; margin-top: 1.5rem; animation: fadeInUp 0.6s ease-out 0.6s both; }
+    .countdown span { color: var(--accent); font-weight: 500; }
   </style>
 </head>
 <body>
+  <!-- Custom Cursor -->
+  <div id="cursor"></div>
+  <div id="cursor-follower"></div>
+
   <div class="thank-you-container">
     <svg class="thank-you-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
       <polyline points="20 6 9 17 4 12"></polyline>
@@ -27,6 +58,61 @@
     <h1 class="thank-you-title">Message Sent!</h1>
     <p class="thank-you-text">Thank you for reaching out. I've received your message and will get back to you as soon as possible.</p>
     <a href="index.html" class="thank-you-btn">← Back to Portfolio</a>
+    <div class="countdown">
+      Redirecting in <span id="countdown">5</span> seconds...
+    </div>
   </div>
+
+  <script>
+    // Custom Cursor
+    if (!window.matchMedia('(hover: none)').matches) {
+      const cursor = document.getElementById('cursor');
+      const follower = document.getElementById('cursor-follower');
+      
+      if (cursor && follower) {
+        let mx = -100, my = -100;
+        let fx = -100, fy = -100;
+
+        const onMove = e => { mx = e.clientX; my = e.clientY; };
+        document.addEventListener('mousemove', onMove, { passive: true });
+
+        const loop = () => {
+          cursor.style.left = mx + 'px';
+          cursor.style.top = my + 'px';
+
+          fx += (mx - fx) * 0.12;
+          fy += (my - fy) * 0.12;
+          follower.style.left = fx + 'px';
+          follower.style.top = fy + 'px';
+
+          requestAnimationFrame(loop);
+        };
+        requestAnimationFrame(loop);
+      }
+    }
+
+    // Auto-redirect countdown
+    let seconds = 5;
+    const countdownEl = document.getElementById('countdown');
+
+    const interval = setInterval(() => {
+      seconds--;
+      if (countdownEl) {
+        countdownEl.textContent = seconds;
+      }
+
+      if (seconds <= 0) {
+        clearInterval(interval);
+        window.location.href = 'index.html#contact';
+      }
+    }, 1000);
+
+    // Allow manual redirect
+    document.addEventListener('click', (e) => {
+      if (e.target.closest('.thank-you-btn')) {
+        clearInterval(interval);
+      }
+    });
+  </script>
 </body>
 </html>
