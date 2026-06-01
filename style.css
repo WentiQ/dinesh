@@ -1758,6 +1758,10 @@ body:has(button:hover) #cursor-follower {
 .form-success svg { width: 20px; height: 20px; flex-shrink: 0; }
 .form-success.show { display: flex; animation: fadeInUp 0.4s var(--ease-out); }
 
+.contact-form.form-hidden {
+  animation: fadeOutDown 0.3s var(--ease-out) forwards;
+}
+
 /* ══════════════════════════════════════════════════════════════
    FOOTER
 ══════════════════════════════════════════════════════════════ */

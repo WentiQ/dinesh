@@ -682,7 +682,10 @@ const clamp = (val, min, max) => Math.min(Math.max(val, min), max);
       btn.querySelector('span').textContent = 'Send message';
       success.classList.add('show');
       success.focus();
-      setTimeout(() => success.classList.remove('show'), 6000);
+      // Redirect to thank you page after 1.5 seconds
+      setTimeout(() => {
+        window.location.href = 'thank-you.html';
+      }, 1500);
     }, 1200);
   });
 })();
@@ -791,6 +794,66 @@ const clamp = (val, min, max) => Math.min(Math.max(val, min), max);
   logo.addEventListener('click', e => {
     e.preventDefault();
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+})();
+
+/* ════════════════════════════════════════════════════════════════
+   18. WEB3FORMS CONTACT FORM
+════════════════════════════════════════════════════════════════ */
+(function initContactForm() {
+  const form = document.getElementById('contactForm');
+  const successMsg = document.getElementById('formSuccess');
+
+  if (!form) return;
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    // Bot check
+    if (form.botcheck.checked) return;
+
+    // Disable submit button to prevent multiple submissions
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span>Sending...</span>';
+
+    try {
+      // Prepare form data
+      const formData = new FormData(form);
+
+      // Send to Web3Forms
+      const response = await fetch('https://api.web3forms.com/submit', {
+        method: 'POST',
+        body: formData
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Show success message
+        form.classList.add('form-hidden');
+        successMsg.classList.add('show');
+
+        // Reset form after showing success message
+        setTimeout(() => {
+          form.reset();
+          form.classList.remove('form-hidden');
+          successMsg.classList.remove('show');
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = originalText;
+        }, 3500);
+      } else {
+        throw new Error(data.message || 'Failed to send message');
+      }
+    } catch (error) {
+      console.error('Form submission error:', error);
+      alert('Error sending message. Please try again or contact directly via email.');
+
+      // Restore button state
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = originalText;
+    }
   });
 })();
 
