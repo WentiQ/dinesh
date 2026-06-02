@@ -541,8 +541,8 @@ const clamp = (val, min, max) => Math.min(Math.max(val, min), max);
     document.body.style.overflow = '';
   };
 
-  // Open on detail button click
-  document.querySelectorAll('.project-detail-btn').forEach(btn => {
+  // Open on detail button click (original cards + new editorial cards)
+  document.querySelectorAll('.project-detail-btn, .fp-case-btn, .fps-btn').forEach(btn => {
     btn.addEventListener('click', () => open(btn.dataset.project));
   });
 
@@ -563,17 +563,164 @@ const clamp = (val, min, max) => Math.min(Math.max(val, min), max);
 })();
 
 /* ════════════════════════════════════════════════════════════════
-   11. TESTIMONIAL SLIDER
+   11. TESTIMONIAL SLIDER & REVIEW SYSTEM
 ════════════════════════════════════════════════════════════════ */
 (function initTestimonials() {
   const track  = document.getElementById('testimonialTrack');
   const prev   = document.getElementById('testPrev');
   const next   = document.getElementById('testNext');
   const dotsEl = document.getElementById('testDots');
+  const reviewForm = document.getElementById('reviewForm');
+  const reviewSuccess = document.getElementById('reviewSuccess');
 
   if (!track) return;
 
-  const cards = track.querySelectorAll('.testimonial-card');
+  const STORAGE_KEY = 'portfolio_visitor_reviews';
+
+  // Load stored reviews and add them to the track
+  const loadStoredReviews = () => {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (!stored) return;
+
+    try {
+      const reviews = JSON.parse(stored);
+      reviews.forEach(review => {
+        const card = createReviewCard(review.name, review.text);
+        track.appendChild(card);
+      });
+    } catch (error) {
+      console.error('Error loading stored reviews:', error);
+    }
+  };
+
+  // Create a review card element
+  const createReviewCard = (name, text) => {
+    const initials = name
+      .split(' ')
+      .map(word => word[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+
+    const card = document.createElement('div');
+    card.className = 'testimonial-card';
+    card.setAttribute('role', 'listitem');
+    card.innerHTML = `
+      <div class="test-quote" aria-hidden="true">"</div>
+      <p class="test-text">${escapeHtml(text)}</p>
+      <div class="test-author">
+        <div class="test-avatar" aria-hidden="true">${initials}</div>
+        <div>
+          <strong>${escapeHtml(name)}</strong>
+          <span>Visitor Review</span>
+        </div>
+      </div>
+    `;
+    return card;
+  };
+
+  // Escape HTML to prevent XSS
+  const escapeHtml = (text) => {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  };
+
+  // Save review to localStorage
+  const saveReview = (name, text) => {
+    try {
+      let reviews = [];
+      const stored = localStorage.getItem(STORAGE_KEY);
+      
+      if (stored) {
+        reviews = JSON.parse(stored);
+      }
+
+      reviews.push({ name, text, timestamp: Date.now() });
+      
+      // Keep only last 50 reviews to prevent excessive storage
+      if (reviews.length > 50) {
+        reviews = reviews.slice(-50);
+      }
+
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(reviews));
+    } catch (error) {
+      console.error('Error saving review:', error);
+    }
+  };
+
+  // Handle review form submission
+  if (reviewForm) {
+    const reviewName = document.getElementById('review-name');
+    const reviewText = document.getElementById('review-text');
+    const charCount = document.getElementById('charCount');
+
+    // Update character count
+    if (reviewText) {
+      reviewText.addEventListener('input', () => {
+        charCount.textContent = reviewText.value.length;
+      });
+    }
+
+    reviewForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+
+      const name = reviewName.value.trim();
+      const text = reviewText.value.trim();
+
+      // Validation
+      if (!name || name.length < 2) {
+        showFormError(reviewName, 'Please enter your name.');
+        return;
+      }
+
+      if (!text || text.length < 20) {
+        showFormError(reviewText, 'Review must be at least 20 characters.');
+        return;
+      }
+
+      // Save and display
+      saveReview(name, text);
+      const newCard = createReviewCard(name, text);
+      track.appendChild(newCard);
+
+      // Reset form
+      reviewForm.reset();
+      charCount.textContent = '0';
+      clearFormErrors();
+
+      // Show success message
+      reviewSuccess.classList.add('show');
+      setTimeout(() => {
+        reviewSuccess.classList.remove('show');
+      }, 5000);
+
+      // Auto-scroll to new review
+      setTimeout(() => {
+        goTo(cards.length - 1);
+      }, 300);
+    });
+  }
+
+  // Form error handling
+  const showFormError = (field, msg) => {
+    field.classList.add('error');
+    const errorEl = field.closest('.form-group').querySelector('.form-error');
+    if (errorEl) errorEl.textContent = msg;
+  };
+
+  const clearFormErrors = () => {
+    document.querySelectorAll('#reviewForm .form-input').forEach(field => {
+      field.classList.remove('error');
+      const errorEl = field.closest('.form-group').querySelector('.form-error');
+      if (errorEl) errorEl.textContent = '';
+    });
+  };
+
+  // Load existing reviews
+  loadStoredReviews();
+
+  let cards = track.querySelectorAll('.testimonial-card');
   const total = cards.length;
   let current = 0;
   let auto;
@@ -589,7 +736,7 @@ const clamp = (val, min, max) => Math.min(Math.max(val, min), max);
     dotsEl.appendChild(dot);
   });
 
-  const dots = dotsEl.querySelectorAll('.test-dot');
+  let dots = dotsEl.querySelectorAll('.test-dot');
 
   const goTo = (idx) => {
     current = (idx + total) % total;
@@ -600,17 +747,19 @@ const clamp = (val, min, max) => Math.min(Math.max(val, min), max);
     });
   };
 
-  prev.addEventListener('click', () => { goTo(current - 1); resetAuto(); });
-  next.addEventListener('click', () => { goTo(current + 1); resetAuto(); });
+  if (prev) prev.addEventListener('click', () => { goTo(current - 1); resetAuto(); });
+  if (next) next.addEventListener('click', () => { goTo(current + 1); resetAuto(); });
 
   const startAuto = () => { auto = setInterval(() => goTo(current + 1), 5000); };
   const resetAuto = () => { clearInterval(auto); startAuto(); };
 
-  startAuto();
+  if (total > 0) startAuto();
 
   // Pause on hover
-  track.parentElement.addEventListener('mouseenter', () => clearInterval(auto));
-  track.parentElement.addEventListener('mouseleave', startAuto);
+  if (track.parentElement) {
+    track.parentElement.addEventListener('mouseenter', () => clearInterval(auto));
+    track.parentElement.addEventListener('mouseleave', startAuto);
+  }
 
   // Touch / swipe
   let touchStartX = 0;
